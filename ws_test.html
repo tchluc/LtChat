@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head><title>LtChat Test</title></head>
+<body>
+  <h2>LtChat Live Test</h2>
+  <input id="msg" placeholder="Ton message" style="width:300px;padding:10px;font-size:18px"/>
+  <button onclick="send()">Envoyer</button>
+  <pre id="log"></pre>
+
+  <script>
+    const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZXhwIjoxNzYzNjgzMjQyfQ.m4M5GHKzZDxARDOnjbusGcVlxnBnmM8-y7dcH6A41rQ";
+    const CHANNEL_ID = "1";
+    const ws = new WebSocket(`ws://localhost:8000/ws/${CHANNEL_ID}?token=${TOKEN}`);
+    const log = document.getElementById("log");
+
+    ws.onmessage = e => {
+      const data = JSON.parse(e.data);
+      if (data.type === "message")
+        log.textContent += `${data.username}: ${data.content}\n`;
+    };
+
+    function send() {
+      const input = document.getElementById("msg");
+      ws.send(JSON.stringify({type: "message", content: input.value}));
+      input.value = "";
+    }
+
+    document.getElementById("msg").addEventListener("keypress", e => {
+      if (e.key === "Enter") send();
+    });
+  </script>
+  // ← Ouvre 2 onglets → tu as un vrai chat live !
