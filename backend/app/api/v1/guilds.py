@@ -147,3 +147,55 @@ async def create_channel(
     await db.refresh(channel)
     
     return channel
+
+
+@router.get("/{guild_id}/channels", response_model=List[Channel])
+async def list_guild_channels(
+    guild_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_session)
+):
+    """
+    Lists all channels in a guild.
+    """
+    # Check if user is member of the guild
+    member_stmt = select(GuildMember).where(
+        GuildMember.guild_id == guild_id,
+        GuildMember.user_id == current_user.id
+    )
+    member_result = await db.execute(member_stmt)
+    if not member_result.scalar_one_or_none():
+        raise HTTPException(status_code=403, detail="You are not a member of this guild")
+
+    # Get all channels
+    stmt = select(Channel).where(Channel.guild_id == guild_id).order_by(Channel.position)
+    result = await db.execute(stmt)
+    channels = result.scalars().all()
+    
+    return channels
+
+
+@router.get("/{guild_id}/members", response_model=List[User])
+async def list_guild_members(
+    guild_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_session)
+):
+    """
+    Lists all members of a guild.
+    """
+    # Check if user is member of the guild
+    member_stmt = select(GuildMember).where(
+        GuildMember.guild_id == guild_id,
+        GuildMember.user_id == current_user.id
+    )
+    member_result = await db.execute(member_stmt)
+    if not member_result.scalar_one_or_none():
+        raise HTTPException(status_code=403, detail="You are not a member of this guild")
+
+    # Get all members
+    stmt = select(User).join(GuildMember).where(GuildMember.guild_id == guild_id)
+    result = await db.execute(stmt)
+    members = result.scalars().all()
+    
+    return members

@@ -43,15 +43,21 @@ async def get_current_user_ws(token: str, db: AsyncSession = Depends(get_session
     Retrieves the current authenticated user for WebSockets (token in query param).
     """
     try:
+        print(f"DEBUG: Validating WS token: {token[:10]}...")
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
         if not user_id:
+            print("DEBUG: No user_id in token")
             raise HTTPException(status_code=401)
-    except JWTError:
+    except JWTError as e:
+        print(f"DEBUG: JWT Error: {e}")
         raise HTTPException(status_code=401, detail="Invalid token")
 
     result = await db.exec(select(User).where(User.id == int(user_id)))
     user = result.first()
     if not user:
+        print(f"DEBUG: User {user_id} not found")
         raise HTTPException(status_code=401)
+    
+    print(f"DEBUG: WS User authenticated: {user.username}")
     return user

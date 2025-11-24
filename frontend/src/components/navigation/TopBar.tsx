@@ -9,6 +9,7 @@ import { useSidebarStore } from "@/store/sidebarStore";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { MemberList } from "@/components/guild/MemberList";
 
 export function TopBar() {
     const router = useRouter();
@@ -69,6 +70,21 @@ export function TopBar() {
     useEffect(() => {
         api("/v1/guilds").then(setGuilds).catch(console.error);
     }, []);
+
+    const [showMemberList, setShowMemberList] = useState(false);
+    const [currentGuild, setCurrentGuild] = useState<any>(null);
+
+    // Update current guild based on URL
+    useEffect(() => {
+        const guildIdMatch = pathname.match(/\/guilds\/(\d+)/);
+        if (guildIdMatch && guilds.length > 0) {
+            const guildId = parseInt(guildIdMatch[1]);
+            const guild = guilds.find(g => g.id === guildId);
+            setCurrentGuild(guild || null);
+        } else {
+            setCurrentGuild(null);
+        }
+    }, [pathname, guilds]);
 
     const initials = user?.username
         ?.split(" ")
@@ -168,6 +184,17 @@ export function TopBar() {
 
                 {/* Right Section */}
                 <div className="flex items-center gap-1 sm:gap-3 z-10">
+                    {/* Members Button (Only in Guild) */}
+                    {currentGuild && (
+                        <button
+                            onClick={() => setShowMemberList(true)}
+                            className="hidden sm:flex p-2 rounded-lg hover:bg-muted/50 transition-all text-muted-foreground hover:text-foreground touch-target"
+                            title="Membres"
+                        >
+                            <User className="w-5 h-5" />
+                        </button>
+                    )}
+
                     {/* Theme Toggle - only render after mount to avoid hydration issues */}
                     {mounted && (
                         <button
@@ -288,6 +315,15 @@ export function TopBar() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Member List Modal */}
+            {showMemberList && currentGuild && (
+                <MemberList
+                    guildId={currentGuild.id}
+                    inviteCode={currentGuild.invite_code}
+                    onClose={() => setShowMemberList(false)}
+                />
             )}
         </>
     );

@@ -13,7 +13,8 @@ export default function DMChatPage() {
     const params = useParams();
     const channelId = params?.channelId as string;
     const { user } = useAuthStore();
-    const { messages, addMessage } = useMessagesStore();
+    const { updateMessageStatus, messages, addMessage } = useMessagesStore();
+
     const [input, setInput] = useState("");
     const scrollRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -21,6 +22,16 @@ export default function DMChatPage() {
     const { sendMessage } = useWebSocket(channelId, (data) => {
         if (data.type === "message") {
             addMessage(channelId, data);
+            // Send read receipt if message is not from me
+            if (user && data.user_id !== Number(user.id)) {
+                sendMessage({
+                    type: "read",
+                    message_id: data.id,
+                    channel_id: channelId
+                });
+            }
+        } else if (data.type === "status_update") {
+            updateMessageStatus(channelId, data.message_id, data.status);
         }
     });
 

@@ -37,15 +37,13 @@ export const useThemeStore = create<ThemeState>()(
             },
 
             initializeTheme: () => {
-                // This will be called on mount to ensure theme is applied
-                const currentTheme = get().theme;
-                applyTheme(currentTheme);
+                const state = get();
+                applyTheme(state.theme);
             },
         }),
         {
             name: 'theme-storage',
             onRehydrateStorage: () => (state) => {
-                // Apply theme immediately after hydration
                 if (state) {
                     applyTheme(state.theme);
                 }

@@ -88,3 +88,8 @@ export const createChannel = async (guildId: number, name: string, type: string 
   const response = await apiMethods.post(`/v1/guilds/${guildId}/channels`, { name, type });
   return response;
 };
+
+export const getGuildMembers = async (guildId: number) => {
+  const response = await apiMethods.get(`/v1/guilds/${guildId}/members`);
+  return response;
+};

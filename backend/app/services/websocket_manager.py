@@ -9,19 +9,20 @@ class ConnectionManager:
     Manages WebSocket connections and broadcasts messages.
     """
     def __init__(self):
-        self.active_connections: dict[str, list[WebSocket]] = defaultdict(list)
+        self.active_connections: dict[str, list[tuple[WebSocket, int]]] = defaultdict(list)
         self.redis = redis.from_url(settings.REDIS_URL)
 
-    async def connect(self, websocket: WebSocket, channel_id: str):
+    async def connect(self, websocket: WebSocket, channel_id: str, user_id: int):
         """
         Accepts a new WebSocket connection and adds it to the active connections list.
 
         Args:
             websocket (WebSocket): The WebSocket connection.
             channel_id (str): The channel ID.
+            user_id (int): The ID of the connecting user.
         """
         await websocket.accept()
-        self.active_connections[channel_id].append(websocket)
+        self.active_connections[channel_id].append((websocket, user_id))
 
     def disconnect(self, websocket: WebSocket, channel_id: str):
         """
@@ -31,8 +32,9 @@ class ConnectionManager:
             websocket (WebSocket): The WebSocket connection.
             channel_id (str): The channel ID.
         """
-        if websocket in self.active_connections[channel_id]:
-            self.active_connections[channel_id].remove(websocket)
+        self.active_connections[channel_id] = [
+            (ws, uid) for ws, uid in self.active_connections[channel_id] if ws != websocket
+        ]
 
 
     async def broadcast(self, message: dict, channel_id: str):
@@ -50,13 +52,19 @@ class ConnectionManager:
 
         # Broadcast direct aux connexions locales
         dead = []
-        for conn in self.active_connections[channel_id]:
+        connections = self.active_connections[channel_id]
+        print(f"DEBUG: Broadcasting to {len(connections)} connections in channel {channel_id}")
+        for conn, _ in connections:
             try:
                 await conn.send_json(message)
             except:
                 dead.append(conn)
-        for conn in dead:
-            self.active_connections[channel_id].remove(conn)
+        
+        # Cleanup dead connections
+        if dead:
+            self.active_connections[channel_id] = [
+                (ws, uid) for ws, uid in self.active_connections[channel_id] if ws not in dead
+            ]
 
 
 manager = ConnectionManager()

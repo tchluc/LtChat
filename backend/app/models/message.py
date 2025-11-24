@@ -12,6 +12,8 @@ class Message(SQLModel, table=True):
     user_id: int = Field(foreign_key="user.id")
     channel_id: int = Field(foreign_key="channel.id")
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    status: str = Field(default="sent") # sent, delivered, read
     edited_at: Optional[datetime] = None
 
     user: "User" = Relationship()

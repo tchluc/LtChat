@@ -1,6 +1,7 @@
 import React from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { Check, CheckCheck } from "lucide-react";
 
 interface MessageBubbleProps {
     message: any; // Using any to avoid type conflicts with different Message types
@@ -72,6 +73,17 @@ export function MessageBubble({
                         {message.username}
                     </span>
                     <span className="text-xs text-muted-foreground/70">{timestamp}</span>
+                    {isMe && (
+                        <span className="ml-1 flex items-center">
+                            {message.status === "read" ? (
+                                <CheckCheck className="w-3 h-3 text-blue-500" />
+                            ) : message.status === "delivered" ? (
+                                <CheckCheck className="w-3 h-3 text-muted-foreground" />
+                            ) : (
+                                <Check className="w-3 h-3 text-muted-foreground" />
+                            )}
+                        </span>
+                    )}
                 </div>
 
                 {/* Message Bubble */}
