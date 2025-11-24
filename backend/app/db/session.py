@@ -10,5 +10,11 @@ async_session = sessionmaker(
 )
 
 async def get_session() -> AsyncSession:
+    """
+    Dependency that provides an asynchronous database session.
+
+    Yields:
+        AsyncSession: The database session.
+    """
     async with async_session() as session:
         yield session

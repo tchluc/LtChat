@@ -14,6 +14,7 @@ class Guild(SQLModel, table=True):
     name: str = Field(index=True)
     owner_id: int = Field(foreign_key="user.id")
     icon: Optional[str] = None
+    invite_code: str = Field(index=True, unique=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     owner: "User" = Relationship(back_populates="guilds")

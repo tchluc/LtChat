@@ -1,6 +1,12 @@
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
+    """
+    Application settings configuration.
+
+    This class loads configuration from environment variables and defines defaults
+    for various services like Database, Redis, Kafka, MinIO, and MeiliSearch.
+    """
     ENVIRONMENT: str = "development"
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/ltchat"
     REDIS_URL: str = "redis://localhost:6379/0"

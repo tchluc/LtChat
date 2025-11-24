@@ -1,6 +1,6 @@
 from fastapi import APIRouter, WebSocket, Depends, WebSocketDisconnect
 from app.services.websocket_manager import manager
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, get_current_user_ws
 from app.models.user import User
 import json
 
@@ -8,7 +8,15 @@ router = APIRouter()
 
 
 @router.websocket("/ws/{channel_id}")
-async def websocket_endpoint(websocket: WebSocket, channel_id: str, current_user: User = Depends(get_current_user)):
+async def websocket_endpoint(websocket: WebSocket, channel_id: str, current_user: User = Depends(get_current_user_ws)):
+    """
+    Handles WebSocket connections for a specific channel.
+
+    Args:
+        websocket (WebSocket): The WebSocket connection.
+        channel_id (str): The channel ID.
+        current_user (User): The authenticated user.
+    """
     await manager.connect(websocket, channel_id)
 
     # Annonce présence

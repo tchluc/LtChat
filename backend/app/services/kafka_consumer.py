@@ -6,13 +6,29 @@ import json
 import asyncio
 
 async def consume_messages():
+    """
+    Consumes messages from the Kafka topic 'messages' and persists them to the database.
+
+    This function runs indefinitely, listening for new messages, saving them to the DB,
+    and then broadcasting them via WebSocket.
+    """
     consumer = AIOKafkaConsumer(
         "messages",
         bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS,
         group_id="ltchat-group",
         auto_offset_reset="earliest"
     )
-    await consumer.start()
+    
+    # Retry logic
+    for _ in range(10):
+        try:
+            await consumer.start()
+            break
+        except Exception:
+            await asyncio.sleep(2)
+    else:
+        print("Failed to connect to Kafka after retries")
+        return
     try:
         async for msg in consumer:
             data = json.loads(msg.value.decode("utf-8"))
@@ -34,4 +50,7 @@ async def consume_messages():
 
 # Lancer au démarrage
 def start_consumer():
+    """
+    Starts the Kafka consumer as a background task.
+    """
     asyncio.create_task(consume_messages())

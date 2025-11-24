@@ -7,6 +7,7 @@ type Message = {
   user_id: number;
   created_at: string;
   channel_id: string;
+  type?: "message" | "system";
 };
 
 type MessagesState = {
