@@ -2,6 +2,7 @@ from collections import defaultdict
 from fastapi import WebSocket
 import redis.asyncio as redis
 from app.core.config import settings
+from app.services.presence_service import presence_service
 
 
 class ConnectionManager:
@@ -23,18 +24,33 @@ class ConnectionManager:
         """
         await websocket.accept()
         self.active_connections[channel_id].append((websocket, user_id))
+        
+        # Mark user as online in Redis
+        await presence_service.set_online(user_id)
 
-    def disconnect(self, websocket: WebSocket, channel_id: str):
+    async def disconnect(self, websocket: WebSocket, channel_id: str, user_id: int):
         """
         Removes a WebSocket connection from the active connections list.
 
         Args:
             websocket (WebSocket): The WebSocket connection.
             channel_id (str): The channel ID.
+            user_id (int): The ID of the disconnecting user.
         """
         self.active_connections[channel_id] = [
             (ws, uid) for ws, uid in self.active_connections[channel_id] if ws != websocket
         ]
+        
+        # Check if user has any other active connections across all channels
+        has_other_connections = any(
+            uid == user_id
+            for connections in self.active_connections.values()
+            for _, uid in connections
+        )
+        
+        # Only mark offline if no other connections exist
+        if not has_other_connections:
+            await presence_service.set_offline(user_id)
 
 
     async def broadcast(self, message: dict, channel_id: str):

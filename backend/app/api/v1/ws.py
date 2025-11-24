@@ -1,5 +1,6 @@
 from fastapi import APIRouter, WebSocket, Depends, WebSocketDisconnect
 from app.services.websocket_manager import manager
+from app.services.presence_service import presence_service
 from app.core.dependencies import get_current_user, get_current_user_ws
 from app.models.user import User
 from app.models.message import Message
@@ -23,6 +24,13 @@ async def websocket_endpoint(
     print(f"DEBUG: WS Connection request for channel {channel_id} from {current_user.username}")
     await manager.connect(websocket, channel_id, current_user.id)
     print(f"DEBUG: WS Connection accepted for channel {channel_id}")
+
+    # Send initial online users list
+    online_users = await presence_service.get_online_users()
+    await websocket.send_json({
+        "type": "presence_init",
+        "online_users": list(online_users)
+    })
 
     # Annonce présence
     await manager.broadcast({
@@ -79,8 +87,6 @@ async def websocket_endpoint(
                     # msg = result.scalar_one_or_none()
                     # if msg:
                     #    msg.status = "read"
-                    #    db.add(msg)
-                    #    await db.commit()
                     
                     # Broadcast read receipt
                     await manager.broadcast({
@@ -90,11 +96,21 @@ async def websocket_endpoint(
                         "channel_id": channel_id
                     }, channel_id)
 
+            elif payload["type"] == "heartbeat":
+                # Update user's presence timestamp
+                await presence_service.heartbeat(current_user.id)
+
     except WebSocketDisconnect:
-        manager.disconnect(websocket, channel_id)
-        await manager.broadcast({
-            "type": "presence",
-            "user_id": current_user.id,
-            "username": current_user.username,
-            "status": "offline"
-        }, channel_id)
+        await manager.disconnect(websocket, channel_id, current_user.id)
+        
+        # Check if user is still online (might have other connections)
+        is_still_online = await presence_service.is_online(current_user.id)
+        
+        # Only broadcast offline if user has no other connections
+        if not is_still_online:
+            await manager.broadcast({
+                "type": "presence",
+                "user_id": current_user.id,
+                "username": current_user.username,
+                "status": "offline"
+            }, channel_id)

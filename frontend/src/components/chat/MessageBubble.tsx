@@ -1,10 +1,11 @@
 import React from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { usePresenceStore } from "@/store/presenceStore";
 import { Check, CheckCheck } from "lucide-react";
 
 interface MessageBubbleProps {
-    message: any; // Using any to avoid type conflicts with different Message types
+    message: any;
     isMe: boolean;
     showAvatar?: boolean;
     className?: string;
@@ -16,6 +17,9 @@ export function MessageBubble({
     showAvatar = true,
     className,
 }: MessageBubbleProps) {
+    const { isOnline } = usePresenceStore();
+    const userIsOnline = message.user_id ? isOnline(message.user_id) : false;
+
     const initials = message.username
         ?.split(" ")
         .map((n: string) => n[0])
@@ -43,12 +47,16 @@ export function MessageBubble({
         >
             {/* Avatar */}
             {showAvatar && (
-                <div className="flex-shrink-0">
+                <div className="relative flex-shrink-0">
                     <Avatar className="w-11 h-11 border-2 border-gradient shadow-glow ring-2 ring-primary/20">
                         <AvatarFallback className="bg-gradient-subtle text-white font-bold text-sm">
                             {initials}
                         </AvatarFallback>
                     </Avatar>
+                    {/* Online status indicator */}
+                    {userIsOnline && (
+                        <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-gray-900 rounded-full" />
+                    )}
                 </div>
             )}
 
